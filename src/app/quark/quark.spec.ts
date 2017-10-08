@@ -14,13 +14,15 @@ describe('Quark', () => {
     beforeEach(() => {
         instance = new Quark(TEST_URL);
         this.OPTIONS = new QuarkOptions(TEST_URL);
-        spyOn(instance, 'request');
-        spyOn(instance, 'create');
-        spyOn(instance, 'read');
-        spyOn(instance, 'update');
-        spyOn(instance, 'delete');
-        spyOn(instance, 'list');
-        spyOn(instance, 'partial');
+        instance.request(this.OPTIONS);
+        spyOn(Quark, 'Promise');
+        // spyOn(instance, 'request');
+        // spyOn(instance, 'create');
+        // spyOn(instance, 'read');
+        // spyOn(instance, 'update');
+        // spyOn(instance, 'delete');
+        // spyOn(instance, 'list');
+        // spyOn(instance, 'partial');
     });
 
     it('existe la instancia', () => {
@@ -102,39 +104,55 @@ describe('Quark', () => {
     describe('Métodos del Request', () => {
         it('existe el método "request"', () => {
             expect(instance.request).toBeDefined();
-            instance.request(this.OPTIONS);
-            expect(instance.request).toHaveBeenCalled();
-            expect(instance.request).toHaveBeenCalledWith(this.OPTIONS);
         });
         it('existe el método "create"', () => {
             expect(instance.create).toBeDefined();
             instance.create({});
-            expect(instance.create).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
         });
         it('existe el método "read"', () => {
             expect(instance.read).toBeDefined();
             instance.read('ONE');
-            expect(instance.read).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
         });
         it('existe el método "update"', () => {
             expect(instance.update).toBeDefined();
             instance.update({ id: 'ONE' });
-            expect(instance.update).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
         });
         it('existe el método "delete"', () => {
             expect(instance.delete).toBeDefined();
             instance.delete('ONE');
-            expect(instance.delete).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
         });
         it('existe el método "list"', () => {
             expect(instance.list).toBeDefined();
             instance.list();
-            expect(instance.list).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
         });
         it('existe el método "partial"', () => {
             expect(instance.partial).toBeDefined();
             instance.partial('ONE', { data: 'one' });
-            expect(instance.partial).toHaveBeenCalled();
+            expect(Quark.Promise).toHaveBeenCalled();
+        });
+    });
+
+    describe('Mocks', () => {
+        it('successMock', () => {
+            const MOCK = { mock: true };
+            expect(Quark.successMock).toBeDefined();
+            Quark.successMock(MOCK).then(
+                res => expect(res).toBe(MOCK),
+                err => fail()
+            );
+        });
+        it('failMock', () => {
+            const ERROR = { message: 'not found' };
+            expect(Quark.failMock).toBeDefined();
+            Quark.failMock(ERROR).then(
+                res => fail(),
+                err => expect(err.error).toBe(ERROR)
+            );
         });
     });
 

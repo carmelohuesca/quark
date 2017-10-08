@@ -14,21 +14,8 @@ export class Quark extends QuarkBase {
     return false;
   }
 
-  static Microservice(options: QuarkOptions): Promise<any> | Observable<any> {
-    return Quark.REACTIVE ? Quark.Observable(options) : Quark.Microservice(options);
-  }
-
-  static Observable(options: QuarkOptions): Observable<any> {
-    return Observable.create(observer => {
-      request(options, (error, response, body) => {
-        if (!error && response.statusCode === options.code) {
-          observer.nex(body);
-          observer.complete();
-        } else {
-          observer.error({ error: error || body, response });
-        }
-      });
-    });
+  static Microservice(options: QuarkOptions): Promise<any> {
+    return Quark.Promise(options);
   }
 
   static Promise(options: QuarkOptions): Promise<any> {
@@ -43,12 +30,12 @@ export class Quark extends QuarkBase {
     });
   }
 
-  static successMock(mock: any) {
-    return Quark.REACTIVE ? new Observable(obs => { obs.next(mock); obs.complete(); }) : Promise.resolve(mock);
+  static successMock(mock: any): Promise<any> {
+    return Promise.resolve(mock);
   }
 
-  static failMock(error: any) {
-    return Quark.REACTIVE ? new Observable(obs => { obs.error(error); obs.complete(); }) : Promise.reject({ error: error });
+  static failMock(error: any): Promise<any> {
+    return Promise.reject({ error: error });
   }
 
   constructor(baseUrl: string) {
@@ -83,7 +70,7 @@ export class Quark extends QuarkBase {
     return this;
   }
 
-  create(data: any): Promise<any> | Observable<any> {
+  create(data: any): Promise<any> {
     const URL = this.path;
     this.options
       .setUrl(URL)
@@ -93,7 +80,7 @@ export class Quark extends QuarkBase {
     return Quark.Microservice(this.options);
   }
 
-  read(id: string): Promise<any> | Observable<any> {
+  read(id: string): Promise<any> {
     const URL = this.setUrl([this.path, id]);
     this.options
       .setUrl(URL)
@@ -102,7 +89,7 @@ export class Quark extends QuarkBase {
     return Quark.Microservice(this.options);
   }
 
-  update(data: any): Promise<any> | Observable<any> {
+  update(data: any): Promise<any> {
     const URL = this.setUrl([this.path, data.id]);
     this.options
       .setUrl(URL)
@@ -112,7 +99,7 @@ export class Quark extends QuarkBase {
     return Quark.Microservice(this.options);
   }
 
-  delete(id: string): Promise<any> | Observable<any> {
+  delete(id: string): Promise<any> {
     const URL = this.setUrl([this.path, id]);
     this.options
       .setUrl(URL)
@@ -121,7 +108,7 @@ export class Quark extends QuarkBase {
     return Quark.Microservice(this.options);
   }
 
-  list(): Promise<any> | Observable<any> {
+  list(): Promise<any> {
     const URL = this.setUrl([this.path]);
     this.options
       .setUrl(URL)
@@ -130,7 +117,7 @@ export class Quark extends QuarkBase {
     return Quark.Microservice(this.options);
   }
 
-  partial(id, data): Promise<any> | Observable<any> {
+  partial(id, data): Promise<any> {
     const URL = this.setUrl([this.path, id]);
     this.options
       .setData(data)
