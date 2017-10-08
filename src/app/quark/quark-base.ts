@@ -1,11 +1,11 @@
-const PACKAGE = require('../../../package.json');
+import * as PACKAGE from '../../../package.json';
 
 export class QuarkBase {
 
   static SLASH = '/';
 
-  static NAME = PACKAGE.name;
-  static VERSION = PACKAGE.version;
+  static NAME = PACKAGE['name'];
+  static VERSION = PACKAGE['version'];
 
   static HTTP_STATES = {
     SUCCESS: 200,
