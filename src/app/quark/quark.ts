@@ -53,8 +53,9 @@ export class Quark extends QuarkBase {
 
   constructor(baseUrl: string) {
     super();
-    return this.
-      setBaseUrl(baseUrl)
+    this.setUrl([Quark.SLASH]);
+    return this
+      .setBaseUrl(baseUrl)
       .setPath();
   }
 
@@ -68,18 +69,18 @@ export class Quark extends QuarkBase {
     return this;
   }
 
+  decode(headers: any): Quark {
+    const AUTHORIZATION = headers && headers.hasOwnProperty('authorization') ? headers.authorization : undefined;
+    const TOKEN = AUTHORIZATION ? AUTHORIZATION.split('Bearer ')[1] : undefined;
+    return TOKEN ? jwt.decode(TOKEN) : undefined;
+  }
+
   request(req: any): Quark {
     const TOKEN = this.decode(req.headers);
     this.options
       .security(TOKEN)
       .setQuerystring(req.query);
     return this;
-  }
-
-  decode(headers: any): Quark {
-    const AUTHORIZATION = headers && headers.hasOwnProperty('authorization') ? headers.authorization : undefined;
-    const TOKEN = AUTHORIZATION ? AUTHORIZATION.split('Bearer ')[1] : undefined;
-    return TOKEN ? jwt.decode(TOKEN) : undefined;
   }
 
   create(data: any): Promise<any> | Observable<any> {

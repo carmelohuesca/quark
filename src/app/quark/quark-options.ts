@@ -13,6 +13,7 @@ export class QuarkOptions {
         this.headers = {};
         this.code = 200;
         this.method = 'GET';
+        this.setUrl('/');
         this.qs = {};
         return this;
     }
@@ -25,7 +26,7 @@ export class QuarkOptions {
     }
 
     setUrl(url: string) {
-        this.url = url;
+        this.url = this.normalizeUrl(url);
         return this;
     }
 
@@ -39,7 +40,7 @@ export class QuarkOptions {
         return this;
     }
 
-    setQuerystring(querystring: string) {
+    setQuerystring(querystring: any) {
         this.qs = querystring;
         return this;
     }
@@ -51,11 +52,9 @@ export class QuarkOptions {
 
     security(decodedToken: any) {
         if (decodedToken) {
-            this.headers['X-SECURITY'] = decodedToken;
             this.headers['X-USER'] = decodedToken.user;
             this.headers['X-ACCOUNT'] = decodedToken.account;
             this.headers['X-LOCALE'] = decodedToken.locale;
-            this.headers['X-LANG'] = decodedToken.lang;
         }
         return this;
     }
