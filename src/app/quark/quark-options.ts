@@ -1,38 +1,62 @@
-import { QuarkStates } from './quark-states';
-const HTTP_STATES = QuarkStates.HTTP_STATES;
-
 export class QuarkOptions {
 
-  protocol?: string;
-  host?: string;
-  hostname?: string;
-  family?: number;
-  port?: number;
-  localAddress?: string;
-  socketPath?: string;
-  method?: string;
-  path?: string;
-  headers?: { [key: string]: any };
-  auth?: string;
-  agent?: any | boolean;
-  // agent?: Agent | boolean;
+    baseUrl: string;
+    url: string;
+    headers: any;
+    code: number;
+    method: string;
+    qs: any;
+    json: any;
 
-  init() {
-    this.setProtocol();
-  }
+    constructor(baseUrl: string) {
+        this.baseUrl = this.normalizeUrl(baseUrl);
+        this.headers = {};
+        this.code = 200;
+        this.method = 'GET';
+        this.qs = {};
+        return this;
+    }
 
-  setUrl(url) {
-    return this;
-  }
+    setData(data: any) {
+        if (data) {
+            this.json = data;
+        }
+        return this;
+    }
 
-  setProtocol(protocol?: string) {
-    this.protocol = protocol || 'http';
-    return this;
-  }
+    setUrl(url: string) {
+        this.url = url;
+        return this;
+    }
 
-  normalizeUrl(url) {
-    const hasSlash = url.substr(url.length - 1) === '/';
-    return hasSlash ? url.substring(0, url.length - 1) : url;
-  }
+    setMethod(method: string) {
+        this.method = method ? method : 'GET';
+        return this;
+    }
 
+    setCode(code: number) {
+        this.code = code ? code : 200;
+        return this;
+    }
+
+    setQuerystring(querystring: string) {
+        this.qs = querystring;
+        return this;
+    }
+
+    normalizeUrl(url: string) {
+        const isSlash = url.substr(url.length - 1) === '/';
+        return isSlash ? url.substring(0, url.length - 1) : url;
+    }
+
+    security(decodedToken: any) {
+        if (decodedToken) {
+            this.headers['X-SECURITY'] = decodedToken;
+            this.headers['X-USER'] = decodedToken.user;
+            this.headers['X-ACCOUNT'] = decodedToken.account;
+            this.headers['X-LOCALE'] = decodedToken.locale;
+            this.headers['X-LANG'] = decodedToken.lang;
+        }
+        return this;
+    }
 }

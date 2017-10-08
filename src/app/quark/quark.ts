@@ -1,115 +1,158 @@
+import * as jwt from 'jsonwebtoken';
+import * as request from 'request';
+
+import { Observable } from 'rxjs/Observable';
+import { QuarkBase } from './quark-base';
 import { QuarkOptions } from './quark-options';
-import * as http from 'http';
 
-export class Quark {
+export class Quark extends QuarkBase {
 
-  endpoint: string;
   options: QuarkOptions;
+  path: string;
 
-  constructor(url, endpoint) {
-    this.endpoint = endpoint;
+  static get REACTIVE(): boolean {
+    return false;
   }
 
-  // setUrl(url) {
-  //   this.options = this.options ? this.options.setUrl(url) : new QuarkOptions();
-  //   return this;
-  // }
+  static Microservice(options: QuarkOptions): Promise<any> | Observable<any> {
+    return Quark.REACTIVE ? Quark.Observable(options) : Quark.Microservice(options);
+  }
 
-  // setEndpoint(path) {
-  //   this.endpoint = path;
-  //   this.options.path = path;
-  //   return this;
-  // }
+  static Observable(options: QuarkOptions): Observable<any> {
+    return Observable.create(observer => {
+      request(options, (error, response, body) => {
+        if (!error && response.statusCode === options.code) {
+          observer.nex(body);
+          observer.complete();
+        } else {
+          observer.error({ error: error || body, response });
+        }
+      });
+    });
+  }
 
-  // setHeadersRoleAndAccount(headers) {
-  //   const decodedToken = Service.decode(headers);
-  //   this.options
-  //     .setRoles(decodedToken.roles)
-  //     .setLocale(decodedToken.locale)
-  //     .setAccount(decodedToken.sub);
-  // }
+  static Promise(options: QuarkOptions): Promise<any> {
+    return new Promise((resolve, reject) => {
+      request(options, (error, response, body) => {
+        if (!error && response.statusCode === options.code) {
+          resolve(body);
+        } else {
+          reject({ error: error || body, response });
+        }
+      });
+    });
+  }
 
-  // setHeaders(headers) {
-  //   this.options.headers = headers;
-  // }
+  static successMock(mock: any) {
+    return Quark.REACTIVE ? new Observable(obs => { obs.next(mock); obs.complete(); }) : Promise.resolve(mock);
+  }
 
-  // request(req) {
-  //   const roles = req.payload ? req.payload.roles : [];
-  //   const account = req.payload ? req.payload.sub : undefined;
-  //   const locale = req.payload ? req.payload.locale : undefined;
-  //   const params = req.query ? req.query : undefined;
-  //   const decodedToken = req.headers ? Service.decode(req.headers) : undefined;
-  //   this.options
-  //     .setRoles(decodedToken ? decodedToken.roles : roles)
-  //     .setAccount(decodedToken ? decodedToken.sub : account)
-  //     .setLocale(decodedToken ? decodedToken.locale : locale)
-  //     .setParam(params);
-  //   return this;
-  // }
+  static failMock(error: any) {
+    return Quark.REACTIVE ? new Observable(obs => { obs.error(error); obs.complete(); }) : Promise.reject({ error: error });
+  }
 
-  // create(item) {
-  //   const path = this.endpoint;
-  //   this.options
-  //     .setData(item)
-  //     .setPath(path)
-  //     .setMethod('POST')
-  //     .setCode(HTTP_STATES.CREATE_SUCCESS);
-  //   return Service.microservice(this.options);
-  // }
+  constructor(baseUrl: string) {
+    super();
+    return this.
+      setBaseUrl(baseUrl)
+      .setPath();
+  }
 
-  // read(id) {
-  //   const path = [this.endpoint, id].join('/');
-  //   this.options
-  //     .setMethod('GET')
-  //     .setCode(HTTP_STATES.SUCCCESS)
-  //     .setPath(path);
-  //   return Service.microservice(this.options);
-  // }
+  setBaseUrl(baseUrl: string): Quark {
+    this.options = new QuarkOptions(baseUrl);
+    return this;
+  }
 
-  // update(item) {
-  //   const path = [this.endpoint, item.id].join('/');
-  //   this.options
-  //     .setData(item)
-  //     .setPath(path)
-  //     .setMethod('PUT')
-  //     .setCode(HTTP_STATES.UPDATE_SUCCESS);
-  //   return Service.microservice(this.options);
-  // }
+  setPath(path?: string): Quark {
+    this.path = this.normalizePath(path || Quark.SLASH);
+    return this;
+  }
 
-  // remove(id) {
-  //   const path = [this.endpoint, id].join('/');
-  //   this.options
-  //     .setPath(path)
-  //     .setMethod('DELETE')
-  //     .setCode(HTTP_STATES.UPDATE_SUCCESS);
-  //   return Service.microservice(this.options);
-  // }
+  request(req: any): Quark {
+    const TOKEN = this.decode(req.headers);
+    this.options
+      .security(TOKEN)
+      .setQuerystring(req.query);
+    return this;
+  }
 
-  // list() {
-  //   const path = this.endpoint;
-  //   this.options
-  //     .setPath(path)
-  //     .setCode(HTTP_STATES.SUCCCESS)
-  //     .setMethod('GET');
-  //   return Service.microservice(this.options);
-  // }
+  decode(headers: any): Quark {
+    const AUTHORIZATION = headers && headers.hasOwnProperty('authorization') ? headers.authorization : undefined;
+    const TOKEN = AUTHORIZATION ? AUTHORIZATION.split('Bearer ')[1] : undefined;
+    return TOKEN ? jwt.decode(TOKEN) : undefined;
+  }
 
-  // partial(id, item) {
-  //   const path = [this.endpoint, id].join('/');
-  //   this.options
-  //     .setData(item)
-  //     .setPath(path)
-  //     .setMethod('PATCH')
-  //     .setCode(HTTP_STATES.UPDATE_SUCCESS);
-  //   return Service.microservice(this.options);
-  // }
+  create(data: any): Promise<any> | Observable<any> {
+    const URL = this.path;
+    this.options
+      .setUrl(URL)
+      .setData(data)
+      .setMethod(Quark.HTTP_VERBS.POST)
+      .setCode(Quark.HTTP_STATES.CREATE_SUCCESS);
+    return Quark.Microservice(this.options);
+  }
 
-  // validate(data, schemeValidation, ...dependencies) {
-  //   return JsonSchemaValidator.validate(data, schemeValidation, ...dependencies);
-  // }
+  read(id: string): Promise<any> | Observable<any> {
+    const URL = this.setUrl([this.path, id]);
+    this.options
+      .setUrl(URL)
+      .setMethod(Quark.HTTP_VERBS.GET)
+      .setCode(Quark.HTTP_STATES.SUCCESS);
+    return Quark.Microservice(this.options);
+  }
 
-  // setPath(path) {
-  //   this.endpoint = [this.endpoint, path].join('/');
-  // }
+  update(data: any): Promise<any> | Observable<any> {
+    const URL = this.setUrl([this.path, data.id]);
+    this.options
+      .setUrl(URL)
+      .setData(data)
+      .setMethod(Quark.HTTP_VERBS.PUT)
+      .setCode(Quark.HTTP_STATES.UPDATE_SUCCESS);
+    return Quark.Microservice(this.options);
+  }
+
+  delete(id: string): Promise<any> | Observable<any> {
+    const URL = this.setUrl([this.path, id]);
+    this.options
+      .setUrl(URL)
+      .setMethod(Quark.HTTP_VERBS.DELETE)
+      .setCode(Quark.HTTP_STATES.DELETE_SUCCESS);
+    return Quark.Microservice(this.options);
+  }
+
+  list(): Promise<any> | Observable<any> {
+    const URL = this.setUrl([this.path]);
+    this.options
+      .setUrl(URL)
+      .setMethod(Quark.HTTP_VERBS.GET)
+      .setCode(Quark.HTTP_STATES.SUCCESS);
+    return Quark.Microservice(this.options);
+  }
+
+  partial(id, data): Promise<any> | Observable<any> {
+    const URL = this.setUrl([this.path, id]);
+    this.options
+      .setData(data)
+      .setUrl(URL)
+      .setMethod(Quark.HTTP_VERBS.PATCH)
+      .setCode(Quark.HTTP_STATES.PARTIAL_UPDATE_SUCCESS);
+    return Quark.Microservice(this.options);
+  }
+
+  private setUrl(params: any): string {
+    return [...params].join(Quark.SLASH);
+  }
+
+  private normalizePath(path: string): string {
+    if (path && path.length > 1) {
+      const HAS_SLASH_AT_START: boolean = path.substr(0, 1) === Quark.SLASH;
+      const HAS_SLASH_AT_END = path.substr(path.length - 1) === Quark.SLASH;
+      path = HAS_SLASH_AT_END ? path.substring(0, path.length - 1) : path;
+      path = HAS_SLASH_AT_START ? path : Quark.SLASH + path;
+    } else {
+      path = Quark.SLASH;
+    }
+    return path;
+  }
 
 }
